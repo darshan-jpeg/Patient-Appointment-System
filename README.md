@@ -1,16 +1,48 @@
-# React + Vite
+# Patient Appointment System (PAS)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Simple Express + MongoDB backend for clinicDB (patients, doctors, appointments). The server serves a static frontend from ../dist and exposes REST endpoints under `/api/*`.
 
-Currently, two official plugins are available:
+**Hosted on Render:** https://patient-appointment-system-y3oo.onrender.com/
+**Database hosted on:** MongoDB Atlas
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Prerequisites
 
-## React Compiler
+* Node.js (16+ recommended)
+* npm
+* A MongoDB Atlas connection URI (database: `clinicDB`)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quick setup (local)
 
-## Expanding the ESLint configuration
+1. Open server folder
+   eg below –
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+   ```bash
+   cd "/Users/darsanp/Patient Appointment System/PAS/server"
+   ```
+
+2. Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+3. Environment variables
+
+   * Create a `.env` in `PAS/server`.
+
+     ```
+     MONGO_URI="mongodb+srv://<username>:<password>@myprojects.vy0auv5.mongodb.net/clinicDB?retryWrites=true&w=majority"
+     PORT=4000
+     ```
+
+4. Run in development
+
+   ```bash
+   npm run dev
+   ```
+
+5. Start (production)
+
+   ```bash
+   npm start
+   ```
