@@ -5,8 +5,41 @@ const router = express.Router()
 
 router.get('/', async (req, res) => {
   try {
-    const items = await Appointment.find({}).sort({ datetime: -1 })
-    res.json(items)
+    const { search, from, to } = req.query
+  let items = await Appointment.find({}).sort({ datetime: -1 }).populate('patientId').populate('doctorId')
+
+    
+    if (search) {
+      const q = search.toLowerCase()
+      items = items.filter(a => {
+        const p = a.patientId || {}
+        const d = a.doctorId || {}
+        const pName = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase()
+        const dName = `${d.firstName || ''} ${d.lastName || ''}`.toLowerCase()
+        const pBiz = (p.patientId || '').toString().toLowerCase()
+        const dBiz = (d.doctorId || '').toString().toLowerCase()
+        return pName.includes(q) || dName.includes(q) || pBiz.includes(q) || dBiz.includes(q)
+      })
+    }
+
+    
+    if (from) {
+      const fromDt = new Date(from)
+      if (!isNaN(fromDt.getTime())) items = items.filter(a => new Date(a.datetime) >= fromDt)
+    }
+    if (to) {
+      const toDt = new Date(to)
+      if (!isNaN(toDt.getTime())) items = items.filter(a => new Date(a.datetime) <= toDt)
+    }
+
+    
+    const out = items.map(a => {
+      const ap = a.toObject ? a.toObject() : a
+      ap.patientId = ap.patientId && ap.patientId._id ? ap.patientId._id : ap.patientId
+      ap.doctorId = ap.doctorId && ap.doctorId._id ? ap.doctorId._id : ap.doctorId
+      return ap
+    })
+    res.json(out)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -14,8 +47,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    // validate datetime
-    if (!req.body.datetime) return res.status(400).json({ error: 'datetime is required' })
+  if (!req.body.datetime) return res.status(400).json({ error: 'datetime is required' })
     const dt = new Date(req.body.datetime)
     if (isNaN(dt.getTime())) return res.status(400).json({ error: 'Invalid datetime' })
     const now = new Date()
@@ -30,8 +62,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    // validate datetime if provided
-    if (req.body.datetime) {
+  if (req.body.datetime) {
       const dt = new Date(req.body.datetime)
       if (isNaN(dt.getTime())) return res.status(400).json({ error: 'Invalid datetime' })
       const now = new Date()

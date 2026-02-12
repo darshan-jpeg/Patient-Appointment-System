@@ -10,10 +10,9 @@ const PatientSchema = new mongoose.Schema({
   phone: { type: String }
 }, { timestamps: true, collection: 'patients' })
 
-// generate a simple unique patientId if not provided
 PatientSchema.pre('save', function(next) {
   if (!this.patientId) {
-    const rnd = Math.floor(Math.random() * 900 + 100) // 3-digit
+    const rnd = Math.floor(Math.random() * 900 + 100)
     this.patientId = `P${Date.now().toString().slice(-8)}${rnd}`
   }
   next()

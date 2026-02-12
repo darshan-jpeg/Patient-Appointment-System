@@ -8,7 +8,8 @@ const DoctorSchema = new mongoose.Schema({
   specialization: { type: String },
   department: { type: String },
   gender: { type: String, enum: ['Male', 'Female', 'Other'] },
-  email: { type: String }
+  email: { type: String },
+  phone: { type: String }
 }, { timestamps: true, collection: 'doctors' })
 
 DoctorSchema.pre('save', function(next) {

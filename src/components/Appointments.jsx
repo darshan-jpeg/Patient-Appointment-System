@@ -17,47 +17,54 @@ export default function Appointments() {
   const [editDoctorInput, setEditDoctorInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState('')
+  const [search, setSearch] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
 
-  async function fetchAll() {
+  async function fetchAll(opts = {}) {
     setLoading(true)
     try {
-      const [ps, ds, ap] = await Promise.all([getPatients(), getDoctors(), getAppointments()])
+        const [ps, ds] = await Promise.all([getPatients(), getDoctors()])
       setPatients(ps)
       setDoctors(ds)
+      const ap = await getAppointments(opts)
       setAppointments(ap)
     } catch (err) { console.error(err) }
     setLoading(false)
   }
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => {
+    const load = async () => { await fetchAll() }
+    load()
+  }, [])
 
-  function parseSelectionValue(val) {
-    if (!val) return ''
-    const parts = val.split('||')
-    if (parts.length === 2) return parts[0]
-    return ''
+  function parseSelectionValue() {
+    return null
   }
 
   function idFromLabel(label, list) {
+    if (!label) return null
+    const lower = label.toLowerCase().trim()
     const found = list.find(item => {
-      const nameOnly = `${item.firstName || ''} ${item.lastName || ''}`.trim()
-      const withId = `${item.patientId || item.doctorId ? (item.patientId || item.doctorId) + ' — ' : ''}${nameOnly}`.trim()
-      return label.toLowerCase() === nameOnly.toLowerCase() || label.toLowerCase() === withId.toLowerCase()
+      const nameOnly = `${item.firstName || ''} ${item.lastName || ''}`.trim().toLowerCase()
+      const bizId = (item.patientId || item.doctorId || '').toString()
+      const withId = bizId ? `${bizId} — ${nameOnly}` : nameOnly
+  return lower === nameOnly || lower === withId || (bizId && lower.startsWith((bizId + ' — ').toLowerCase())) || lower.includes(nameOnly)
     })
-    return found ? found.id : ''
+    return found ? found.id : null
   }
 
   async function handleSchedule(e) {
     e.preventDefault()
     setFormError('')
-  let pid = form.patientId
+    let pid = form.patientId
     let did = form.doctorId
     if (!pid && patientInput) pid = parseSelectionValue(patientInput) || idFromLabel(patientInput, patients)
     if (!did && doctorInput) did = parseSelectionValue(doctorInput) || idFromLabel(doctorInput, doctors)
-
-    if (!pid) return setFormError('Please select a valid patient from the list.')
-    if (!did) return setFormError('Please select a valid doctor from the list.')
-    if (!form.datetime) return setFormError('Please choose date and time for the appointment.')
+    if (!pid || !did || !form.datetime || !form.notes || !form.notes.trim()) {
+      setFormError('Enter all details to submit')
+      return
+    }
     const selected = new Date(form.datetime)
     const now = new Date()
     if (selected < now) return setFormError('Cannot schedule an appointment in the past.')
@@ -76,8 +83,8 @@ export default function Appointments() {
     setEditForm({ patientId: a.patientId, doctorId: a.doctorId, datetime: a.datetime ? new Date(a.datetime).toISOString().slice(0,16) : '', notes: a.notes || '' })
     const p = patients.find(x => x.id === a.patientId)
     const d = doctors.find(x => x.id === a.doctorId)
-    setEditPatientInput(p ? `${p.id}||${p.patientId} — ${p.firstName} ${p.lastName}` : '')
-    setEditDoctorInput(d ? `${d.id}||${d.doctorId} — ${d.firstName} ${d.lastName}` : '')
+    setEditPatientInput(p ? `${p.patientId} — ${p.firstName} ${p.lastName}` : '')
+    setEditDoctorInput(d ? `${d.doctorId} — ${d.firstName} ${d.lastName}` : '')
   }
 
   async function submitEdit(e) {
@@ -87,10 +94,10 @@ export default function Appointments() {
     let did = editForm.doctorId
     if (!pid && editPatientInput) pid = parseSelectionValue(editPatientInput) || idFromLabel(editPatientInput, patients)
     if (!did && editDoctorInput) did = parseSelectionValue(editDoctorInput) || idFromLabel(editDoctorInput, doctors)
-
-    if (!pid) return setFormError('Please select a valid patient for the appointment.')
-    if (!did) return setFormError('Please select a valid doctor for the appointment.')
-    if (!editForm.datetime) return setFormError('Please choose date and time.')
+    if (!pid || !did || !editForm.datetime || !editForm.notes || !editForm.notes.trim()) {
+      setFormError('Enter all details to submit')
+      return
+    }
 
     try {
       const updated = await updateAppointment(editingId, { patientId: pid, doctorId: did, datetime: editForm.datetime, notes: editForm.notes })
@@ -114,30 +121,37 @@ export default function Appointments() {
 
   return (
     <div>
+      <div className="form-inline" style={{ marginBottom: 12 }}>
+        <input placeholder="Search appointments (patient/doctor/id)" value={search} onChange={e => setSearch(e.target.value)} />
+        <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+        <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} />
+        <button type="button" className="btn" onClick={() => fetchAll({ search, from: fromDate ? `${fromDate}T00:00:00` : undefined, to: toDate ? `${toDate}T23:59:59` : undefined })}>Apply Filters</button>
+        <button type="button" className="btn ghost" onClick={() => { setSearch(''); setFromDate(''); setToDate(''); fetchAll() }}>Clear</button>
+      </div>
       <form className="form-inline" onSubmit={handleSchedule}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <input list="patients-list" placeholder="Search or choose patient" value={patientInput} onChange={e => { setPatientInput(e.target.value); setForm({ ...form, patientId: '' }) }} />
+          <input list="patients-list" placeholder="Search or choose patient" value={patientInput} onChange={e => { setPatientInput(e.target.value); setForm({ ...form, patientId: '' }); setFormError('') }} />
           <datalist id="patients-list">
             {patients.map(p => {
               const display = `${p.patientId} — ${p.firstName} ${p.lastName}`
-              return <option key={p.id} value={`${p.id}||${display}`} />
+              return <option key={p.id} value={display} />
             })}
           </datalist>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <input list="doctors-list" placeholder="Search or choose doctor" value={doctorInput} onChange={e => { setDoctorInput(e.target.value); setForm({ ...form, doctorId: '' }) }} />
+          <input list="doctors-list" placeholder="Search or choose doctor" value={doctorInput} onChange={e => { setDoctorInput(e.target.value); setForm({ ...form, doctorId: '' }); setFormError('') }} />
           <datalist id="doctors-list">
             {doctors.map(d => {
               const display = `${d.doctorId} — ${d.firstName} ${d.lastName} (${d.specialization || d.department || '—'})`
-              return <option key={d.id} value={`${d.id}||${display}`} />
+              return <option key={d.id} value={display} />
             })}
           </datalist>
         </div>
 
-        <input type="datetime-local" value={form.datetime} onChange={e => setForm({...form, datetime: e.target.value})} />
-        <input placeholder="Notes" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
-        <button className="btn primary">Schedule</button>
+  <input type="datetime-local" value={form.datetime} onChange={e => { setForm({...form, datetime: e.target.value}); setFormError('') }} />
+  <input placeholder="Notes" value={form.notes} onChange={e => { setForm({...form, notes: e.target.value}); setFormError('') }} />
+        <button className="btn primary" disabled={!( (form.patientId || patientInput) && (form.doctorId || doctorInput) && form.datetime && form.notes && form.notes.trim() )}>Schedule</button>
       </form>
 
       {formError && <div className="empty" style={{ color: 'crimson', marginTop: 8 }}>{formError}</div>}
@@ -149,26 +163,26 @@ export default function Appointments() {
           <div key={a.id} className="card">
             {editingId === a.id ? (
               <form className="form-inline" onSubmit={submitEdit} style={{ width: '100%' }}>
-                <input list="patients-list-edit" placeholder="Patient" value={editPatientInput} onChange={e => { setEditPatientInput(e.target.value); setEditForm({ ...editForm, patientId: '' }) }} />
+                <input list="patients-list-edit" placeholder="Patient" value={editPatientInput} onChange={e => { setEditPatientInput(e.target.value); setEditForm({ ...editForm, patientId: '' }); setFormError('') }} />
                 <datalist id="patients-list-edit">
                   {patients.map(p => {
-                    const display = `${p.firstName} ${p.lastName}`
-                    return <option key={p.id} value={`${p.id}||${display}`} />
+                    const display = `${p.patientId} — ${p.firstName} ${p.lastName}`
+                    return <option key={p.id} value={display} />
                   })}
                 </datalist>
 
-                <input list="doctors-list-edit" placeholder="Doctor" value={editDoctorInput} onChange={e => { setEditDoctorInput(e.target.value); setEditForm({ ...editForm, doctorId: '' }) }} />
+                <input list="doctors-list-edit" placeholder="Doctor" value={editDoctorInput} onChange={e => { setEditDoctorInput(e.target.value); setEditForm({ ...editForm, doctorId: '' }); setFormError('') }} />
                 <datalist id="doctors-list-edit">
                   {doctors.map(d => {
-                    const display = `${d.firstName} ${d.lastName}`
-                    return <option key={d.id} value={`${d.id}||${display}`} />
+                    const display = `${d.doctorId} — ${d.firstName} ${d.lastName}`
+                    return <option key={d.id} value={display} />
                   })}
                 </datalist>
 
-                <input type="datetime-local" value={editForm.datetime} onChange={e => setEditForm({...editForm, datetime: e.target.value})} />
-                <input placeholder="Notes" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} />
+                <input type="datetime-local" value={editForm.datetime} onChange={e => { setEditForm({...editForm, datetime: e.target.value}); setFormError('') }} />
+                <input placeholder="Notes" value={editForm.notes} onChange={e => { setEditForm({...editForm, notes: e.target.value}); setFormError('') }} />
                 <div className="actions">
-                  <button className="btn">Save</button>
+                  <button className="btn" disabled={!( (editForm.patientId || editPatientInput) && (editForm.doctorId || editDoctorInput) && editForm.datetime && editForm.notes && editForm.notes.trim() )}>Save</button>
                   <button type="button" className="btn ghost" onClick={() => setEditingId(null)}>Cancel</button>
                 </div>
               </form>
