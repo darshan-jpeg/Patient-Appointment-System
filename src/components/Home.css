@@ -1,0 +1,119 @@
+/* Home page styles */
+
+.home-root {
+	min-height: 100vh;
+}
+
+/* Header */
+
+.app-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 12px 24px;
+border-bottom: 1px solid #e5e7eb;
+}
+
+.brand {
+font-size: 18px;
+font-weight: bold;
+}
+
+/* Navigation */
+
+.nav {
+display: flex;
+gap: 6px;
+}
+
+.nav button {
+padding: 8px 12px;
+border: none;
+background: transparent;
+cursor: pointer;
+color: #6b7280;
+border-radius: 6px;
+}
+
+.nav button.active {
+background-color: #2563eb;
+color: white;
+}
+
+/* Layout */
+
+.container {
+max-width: 1000px;
+margin: 20px auto;
+padding: 20px;
+}
+
+.section-card {
+background: white;
+padding: 16px;
+border-radius: 8px;
+box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Cards & lists */
+
+.list {
+margin-top: 16px;
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+
+.card {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 12px 16px;
+background: white;
+border-radius: 8px;
+box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.empty {
+padding: 20px;
+color: #6b7280;
+}
+
+.muted {
+color: #6b7280;
+}
+
+.small {
+font-size: 12px;
+color: #6b7280;
+}
+
+/* Forms */
+
+.form-inline {
+display: flex;
+gap: 8px;
+flex-wrap: wrap;
+align-items: center;
+}
+
+.form-inline input,
+.form-inline select {
+padding: 8px 10px;
+border-radius: 6px;
+border: 1px solid #e5e7eb;
+background: white;
+min-width: 160px;
+}
+
+/* Buttons */
+
+/* use .btn classes from pass.css for consistent buttons */
+/* Mobile */
+
+@media (max-width: 640px) {
+.form-inline input,
+.form-inline select {
+min-width: 120px;
+}
+}

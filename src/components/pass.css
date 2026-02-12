@@ -1,0 +1,10 @@
+.btn{
+    background:#eef2ff;
+    border:0;
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+}
+.btn.primary{background:var(--accent);color:white}
+.btn.danger{background:var(--danger);color:white}
+.btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.06)}
